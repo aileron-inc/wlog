@@ -1,0 +1,102 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+QUERIES_DIR = Pathname.new(__dir__).join("../app/queries")
+
+ERRORS = []
+
+def skip_string(text, pos)
+  i = pos + 1
+  while i < text.length
+    return i + 1 if text[i] == "'"
+    i += 1
+  end
+  i
+end
+
+def find_enclosing_select_paren(text, pos)
+  depth = 0
+  i = pos
+  select_pos = nil
+  while i >= 0
+    if text[i] == "'"
+      i -= 1
+      while i >= 0 && text[i] != "'"
+        i -= 1
+      end
+      i -= 1
+      next
+    end
+    case text[i]
+    when ")"
+      depth += 1
+    when "("
+      if depth == 0
+        before = text[0...i].rstrip
+        if before.end_with?("SELECT")
+          return { open: i, select_pos: i - 6 }
+        end
+        return nil
+      end
+      depth -= 1
+    end
+    i -= 1
+  end
+  nil
+end
+
+def find_matching_close_paren(text, open_pos)
+  depth = 0
+  i = open_pos
+  while i < text.length
+    if text[i] == "'"
+      i = skip_string(text, i)
+      next
+    end
+    case text[i]
+    when "(" then depth += 1
+    when ")"
+      depth -= 1
+      return i if depth == 0
+    end
+    i += 1
+  end
+  text.length - 1
+end
+
+Dir.glob(QUERIES_DIR.join("**/*.sql")).each do |f|
+  path = Pathname.new(f)
+  relative = path.relative_path_from(QUERIES_DIR)
+  text = path.read
+
+  idx = 0
+  while (idx = text.index(/json_group_array\s*\(/i, idx))
+    enclosing = find_enclosing_select_paren(text, idx)
+    if enclosing
+      close_pos = find_matching_close_paren(text, enclosing[:open])
+      subquery = text[enclosing[:open]..close_pos]
+      if subquery.match?(/LIMIT\s+\d+/i)
+        line_num = text[0..enclosing[:open]].count("\n") + 1
+        ERRORS << {
+          file: relative.to_s,
+          line: line_num,
+          rule: "json_group_array + LIMIT in same subquery (LIMIT will be ignored by SQLite)",
+          severity: "error"
+        }
+      end
+    end
+    idx += 1
+  end
+end
+
+if ERRORS.empty?
+  puts "No issues found."
+  exit 0
+end
+
+ERRORS.each do |e|
+  icon = e[:severity] == "error" ? "ERROR" : "WARN"
+  puts "[#{icon}] #{e[:file]}:#{e[:line]} #{e[:rule]}"
+end
+
+exit ERRORS.any? { |e| e[:severity] == "error" } ? 1 : 0

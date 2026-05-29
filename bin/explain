@@ -1,0 +1,36 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../config/boot"
+require_relative "../config/environment"
+
+ActiveRecord::Base.logger = nil
+
+query_name = ARGV[0]
+params = {}
+
+ARGV[1..].each_slice(2) do |key, value|
+  params[key] = value
+end
+
+if query_name.nil?
+  warn "Usage: bin/explain <query_name> [key value ...]"
+  warn ""
+  warn "Examples:"
+  warn "  bin/explain villages/day village_id 1v13qqot day 1"
+  warn "  bin/explain villages/about village_id 1v13qqot"
+  exit 1
+end
+
+pq = PropsQuery.new(query_name, defaults: VillagesController.defaults, permitted_params: params)
+
+sql = pq.sql
+params.each { |k, v| sql = sql.gsub(":#{k}", ActiveRecord::Base.connection.quote(v)) }
+
+conn = ActiveRecord::Base.connection.raw_connection
+puts "EXPLAIN QUERY PLAN for: #{query_name}"
+puts "=" * 60
+
+conn.execute("EXPLAIN QUERY PLAN #{sql}").to_a.each do |row|
+  puts row.is_a?(Hash) ? row.values.join(" | ") : row.join(" | ")
+end

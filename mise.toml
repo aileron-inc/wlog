@@ -1,0 +1,88 @@
+[settings]
+experimental = true
+
+[env]
+_.source = "bin/load_env"
+
+[tools]
+ruby = "4.0.4"
+bun = "latest"
+
+# --- Setup ---
+
+[tasks.setup]
+run = "mise install && mise run bootstrap"
+description = "ツールインストール + 初期セットアップ"
+
+[tasks.bootstrap]
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "==> Installing Ruby dependencies"
+bundle check 2>/dev/null || bundle install
+
+echo "==> Installing Bun dependencies"
+bun install --frozen-lockfile 2>/dev/null || bun install
+
+echo "==> Preparing storage directory"
+mkdir -p storage
+
+echo "==> Setup complete!"
+echo "    Run 'bin/dev' to start the development server"
+"""
+description = "依存インストール + ディレクトリ準備"
+
+# --- Dev ---
+
+[tasks.server]
+run = "bin/dev"
+description = "開発サーバー起動 (rails + vite)"
+
+# --- Scraping ---
+
+[tasks.scrape]
+description = "人狼審問ログをスクレイピング"
+run = "bun run sling/scrape.ts"
+
+[tasks."scrape:seed"]
+run = ["mise run scrape", "mise run sling:seed", "mise run turso:seed", "mise run gen:characters"]
+description = "スクレイピング + Turso投入 + キャラ表生成"
+
+# --- Data Loading ---
+
+[tasks."sling:seed"]
+run = "sling run -r sling/wlog.yaml"
+description = "JSON → ローカルSQLite にデータ投入（staging）"
+
+[tasks."turso:seed"]
+run = "sqlite3 storage/seed.sqlite3 .dump | turso db shell wlog-aileron"
+description = "ローカルSQLite → Turso に dump import"
+
+# --- Generate ---
+
+[tasks."gen:characters"]
+run = "bun run sling/generate-characters.ts"
+description = "キャラクター表 TS を生成"
+
+[tasks."gen:village"]
+run = "bun run script/generate-village.ts"
+description = "AI村生成ジョブを投入"
+
+[tasks.worker]
+run = "bun run script/worker.ts"
+description = "ジョブワーカー (poll & process)"
+
+# --- Deploy ---
+
+[tasks."fly:deploy"]
+run = "fly deploy --app aileron-wlog-dev"
+description = "Fly.io へデプロイ"
+
+[tasks."fly:logs"]
+run = "fly logs --app aileron-wlog-dev"
+description = "Fly.io ログ確認"
+
+[tasks."fly:secrets"]
+run = "fly secrets list --app aileron-wlog-dev"
+description = "Fly.io secrets 確認"

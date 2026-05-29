@@ -1,0 +1,35 @@
+app = 'aileron-wlog-dev'
+primary_region = 'nrt'
+
+[build]
+
+[env]
+  RAILS_ENV = 'production'
+  RAILS_LOG_TO_STDOUT = 'true'
+  RAILS_SERVE_STATIC_FILES = 'true'
+  PRIMARY_DATABASE_PATH = '/data/production.sqlite3'
+  CACHE_DATABASE_PATH = '/data/production_cache.sqlite3'
+  QUEUE_DATABASE_PATH = '/data/production_queue.sqlite3'
+  BUNDLE_WITHOUT = 'development:test'
+  VITE_RUBY_BUILD_MODE = 'production'
+
+[[mounts]]
+  source = 'wlog_data'
+  destination = '/data'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['web']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  processes = ['web']
+
+[processes]
+  web = './bin/entrypoint-app'

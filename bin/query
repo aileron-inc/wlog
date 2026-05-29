@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../config/boot"
+require_relative "../config/environment"
+
+ActiveRecord::Base.logger = nil
+
+query_name = ARGV[0]
+params = {}
+
+ARGV[1..].each_slice(2) do |key, value|
+  params[key] = value
+end
+
+if query_name.nil?
+  warn "Usage: bin/query <query_name> [key value ...]"
+  warn ""
+  warn "Examples:"
+  warn "  bin/query villages/day village_id 1v13qqot day 1"
+  warn "  bin/query villages/day village_id 1v13qqot day 1 spoiler true"
+  warn "  bin/query villages/about village_id 1v13qqot"
+  exit 1
+end
+
+result = PropsQuery.find(query_name, defaults: VillagesController.defaults, permitted_params: params).call
+
+if result.is_a?(PropsQuery::NullQuery)
+  warn "Query not found: #{query_name}"
+  exit 1
+end
+
+puts JSON.pretty_generate(result)

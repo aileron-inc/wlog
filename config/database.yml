@@ -1,0 +1,19 @@
+default: &default
+  adapter: libsql
+  max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  timeout: 5000
+
+development:
+  <<: *default
+  database: <%= ENV.fetch("TURSO_DATABASE_URL") { "" } %>
+  token: <%= ENV.fetch("TURSO_AUTH_TOKEN") { "" } %>
+  replica_path: storage/development_replica.sqlite3
+
+test:
+  <<: *default
+  database: storage/test.sqlite3
+
+production:
+  <<: *default
+  database: <%= ENV.fetch("TURSO_DATABASE_URL") { "" } %>
+  token: <%= ENV.fetch("TURSO_AUTH_TOKEN") { "" } %>

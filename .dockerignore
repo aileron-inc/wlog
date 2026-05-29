@@ -1,0 +1,15 @@
+.git
+.gitignore
+.tmp
+.vscode
+.idea
+node_modules
+public/vite-dev
+public/vite-test
+storage/*.sqlite3
+storage/*.sqlite3-*
+tmp
+log
+.env
+.env.*
+!.env.example

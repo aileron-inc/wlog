@@ -1,0 +1,3 @@
+vite: VITE_RUBY_PORT=8100 bin/vite dev
+web: PORT=3300 VITE_RUBY_PORT=8100 bin/rails s
+worker: bun --watch run script/worker.ts
