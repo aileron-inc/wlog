@@ -1,5 +1,5 @@
-import { Database } from "bun:sqlite";
-import crypto from "node:crypto";
+import { db } from "../lib/db";
+import * as crypto from "node:crypto";
 import { mkdirSync, appendFileSync, existsSync, readFileSync } from "node:fs";
 import { client, MODEL } from "../lib/llm";
 import { CHARACTER_POOL, shuffle } from "../lib/characters";
@@ -7,7 +7,6 @@ import { assignRoles, type AssignedRole } from "../lib/roles";
 import { buildProloguePrompt, buildDayPrompt, type GeneratedPost } from "../lib/prompts";
 import { logJob } from "../lib/logger";
 
-const DB_PATH = "storage/development.sqlite3";
 const MAX_RETRIES = 5;
 const BASE_DELAY_MS = 5000;
 const LOG_DIR = "log/villages";
@@ -148,7 +147,6 @@ function buildPreviousContext(entries: NDJSONEntry[]): { alive: AssignedRole[]; 
 }
 
 export async function processGenerateVillage(jobId: string, payload: { village_name: string; character_count: number }) {
-  const db = new Database(DB_PATH);
   const path = ndjsonPath(jobId);
   const now = new Date().toISOString();
   const existing = readEntries(path);
@@ -360,45 +358,71 @@ export async function processGenerateVillage(jobId: string, payload: { village_n
   logJob(jobId, "Saving to database...");
   const characterNames = ["参加者は以下の通りです。", ...assigned.map(c => c.name)];
   const pureNames = characterNames.filter(n => !n.includes("以下の通り"));
-  const characterSetId = (db.prepare(`
-    SELECT set_id FROM avatars
-    WHERE name IN (${pureNames.map(() => "?").join(",")})
-    GROUP BY set_id ORDER BY COUNT(*) DESC LIMIT 1
-  `).get(...pureNames) as { set_id: string } | undefined)?.set_id ?? null;
+  const characterSetIdResult = await db.execute({
+    sql: `
+      SELECT set_id FROM avatars
+      WHERE name IN (${pureNames.map(() => "?").join(",")})
+      GROUP BY set_id ORDER BY COUNT(*) DESC LIMIT 1
+    `,
+    args: pureNames,
+  });
+  const characterSetId = (characterSetIdResult.rows[0] as unknown as { set_id: string } | undefined)?.set_id ?? null;
 
-  db.transaction(() => {
-    db.exec(`DELETE FROM posts WHERE village_id = '${villageId}'`);
-    db.exec(`DELETE FROM village_characters WHERE village_id = '${villageId}'`);
-    db.exec(`DELETE FROM villages WHERE id = '${villageId}'`);
+  const tx = await db.transaction("write");
+  try {
+    await tx.execute({
+      sql: `DELETE FROM posts WHERE village_id = ?`,
+      args: [villageId]
+    });
+    await tx.execute({
+      sql: `DELETE FROM village_characters WHERE village_id = ?`,
+      args: [villageId]
+    });
+    await tx.execute({
+      sql: `DELETE FROM villages WHERE id = ?`,
+      args: [villageId]
+    });
 
-    db.prepare(`
-      INSERT INTO villages (id, village_number, name, characters, character_set_id, status, winner, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(villageId, 9999, payload.village_name, JSON.stringify(characterNames), characterSetId, "ended", winner, now);
+    await tx.execute({
+      sql: `
+        INSERT INTO villages (id, village_number, name, characters, character_set_id, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `,
+      args: [villageId, 9999, payload.village_name, JSON.stringify(characterNames), characterSetId, now]
+    });
 
-    const insertPost = db.prepare(`
-      INSERT INTO posts (village_id, character, day, sequence, body, post_type, source, timestamp, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
     for (const p of allPosts) {
-      insertPost.run(villageId, p.character, p.day, p.sequence, p.body, p.post_type, p.source, p.timestamp, now);
+      await tx.execute({
+        sql: `
+          INSERT INTO posts (village_id, character, day, sequence, body, post_type, source, timestamp, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        args: [villageId, p.character, p.day, p.sequence, p.body, p.post_type, p.source, p.timestamp, now]
+      });
     }
 
-    const insertVC = db.prepare(`
-      INSERT INTO village_characters (village_id, name, role, is_alive, team)
-      VALUES (?, ?, ?, ?, ?)
-    `);
     for (const c of assigned) {
       const isAlive = alive.some(a => a.name === c.name) ? 1 : 0;
-      insertVC.run(villageId, c.name, c.role, isAlive, c.team);
+      await tx.execute({
+        sql: `
+          INSERT INTO village_characters (village_id, name, role, is_alive, team)
+          VALUES (?, ?, ?, ?, ?)
+        `,
+        args: [villageId, c.name, c.role, isAlive, c.team]
+      });
     }
-  })();
+
+    await tx.commit();
+  } catch (e) {
+    await tx.rollback();
+    throw e;
+  }
 
   const result = { village_id: villageId, posts: allPosts.length, winner };
-  db.prepare(`
-    UPDATE jobs SET status = 'completed', result = ?, updated_at = ? WHERE id = ?
-  `).run(JSON.stringify(result), new Date().toISOString(), jobId);
+  await db.execute({
+    sql: `UPDATE jobs SET status = 'completed', result = ?, updated_at = ? WHERE id = ?`,
+    args: [JSON.stringify(result), new Date().toISOString(), jobId]
+  });
 
-  db.close();
   logJob(jobId, `Done! Village ID: ${villageId}, Winner: ${winner}`);
 }

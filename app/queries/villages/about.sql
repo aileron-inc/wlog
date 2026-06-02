@@ -5,8 +5,16 @@ SELECT json_object(
     , 'village_number', village_number
     , 'name', name
     , 'characters', characters
-    , 'status', status
-    , 'winner', winner
+    , 'status', 'ended'
+    , 'winner', (
+        SELECT CASE 
+          WHEN COUNT(*) = 0 THEN NULL
+          WHEN COUNT(CASE WHEN team = 'werewolf' AND is_alive = 1 THEN 1 END) = 0 THEN 'villager'
+          ELSE 'werewolf'
+        END
+        FROM village_characters
+        WHERE village_id = villages.id
+      )
     ) FROM villages
     WHERE id = :village_id
   ),
