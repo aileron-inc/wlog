@@ -1,6 +1,13 @@
 import { readFileSync, writeFileSync } from "fs";
 
-const characters = JSON.parse(readFileSync("sling/seeds/wlog/characters.json", "utf-8"));
+const avatarsNdJson = readFileSync("sling/seeds/wlog/avatars.json", "utf-8");
+const characters = avatarsNdJson
+  .split("\n")
+  .filter(Boolean)
+  .map((line) => {
+    const a = JSON.parse(line);
+    return { name: a.name, avatar: a.avatar_url };
+  });
 
 const entries = characters
   .map((c: { name: string; avatar: string }) => `  { name: "${c.name}", avatar: "${c.avatar}" }`)

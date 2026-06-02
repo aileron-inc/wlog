@@ -352,14 +352,15 @@ async function main() {
     }
 
     console.log(`[${i + 1}/${nums.length}] village ${num} (${result.village.id}) - ${result.posts.length} posts`);
-  }
 
-  if (nums.length > 0) {
+    // Save to files immediately so we don't lose progress if interrupted (Resume support)
     writeFileSync(`${outDir}/character_sets.json`, allSets.map((s) => JSON.stringify(s)).join("\n") + "\n");
     writeFileSync(`${outDir}/villages.json`, allVillages.map((v) => JSON.stringify(v)).join("\n") + "\n");
     writeFileSync(`${outDir}/posts.json`, allPosts.map((p) => JSON.stringify(p)).join("\n") + "\n");
     writeFileSync(`${outDir}/avatars.json`, allAvatars.map((a) => JSON.stringify(a)).join("\n") + "\n");
+  }
 
+  if (nums.length > 0) {
     console.log(`\nTotal: ${allVillages.length} villages, ${allPosts.length} posts, ${allSets.length} sets, ${allAvatars.length} avatars`);
   }
 }

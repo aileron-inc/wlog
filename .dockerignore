@@ -13,3 +13,4 @@ log
 .env
 .env.*
 !.env.example
+sling/seeds/

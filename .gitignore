@@ -42,6 +42,8 @@
 
 /vite.config.mjs
 
+scrape.log
+
 # Vite Ruby
 /public/vite*
 node_modules

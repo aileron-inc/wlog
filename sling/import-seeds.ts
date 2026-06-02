@@ -20,18 +20,65 @@ function readNdJson<T>(path: string): T[] {
   return text.split("\n").filter(Boolean).map((line) => JSON.parse(line));
 }
 
-async function chunkInsert(tableName: string, columns: string[], rows: any[][], chunkSize = 100) {
+async function chunkInsert(tableName: string, columns: string[], rows: any[][], chunkSize = 1000, concurrency = 10) {
+  const promises: (() => Promise<void>)[] = [];
+
   for (let i = 0; i < rows.length; i += chunkSize) {
     const chunk = rows.slice(i, i + chunkSize);
     const placeholders = chunk.map(() => `(${columns.map(() => "?").join(",")})`).join(",");
     const sql = `INSERT INTO ${tableName} (${columns.join(",")}) VALUES ${placeholders}`;
     const args = chunk.flat();
-    await db.execute({ sql, args });
+
+    promises.push(async () => {
+      await db.execute({ sql, args });
+    });
   }
+
+  // Simple concurrency controller
+  const queue = [...promises];
+  const workers: Promise<void>[] = [];
+
+  async function worker() {
+    while (queue.length > 0) {
+      const task = queue.shift();
+      if (task) {
+        try {
+          await task();
+        } catch (e: any) {
+          console.error(`\n[Error] Failed to insert chunk into ${tableName}:`, e.message);
+          throw e;
+        }
+      }
+    }
+  }
+
+  for (let j = 0; j < concurrency; j++) {
+    workers.push(worker());
+  }
+
+  await Promise.all(workers);
 }
 
 async function main() {
   const seedDir = "sling/seeds/wlog";
+
+  // Apply Schema Definition
+  console.log("Applying schema definition from db/schema.sql...");
+  const schemaSql = readFileSync("db/schema.sql", "utf-8");
+  const schemaStatements = schemaSql
+    .split(";\n")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+
+  for (const stmt of schemaStatements) {
+    try {
+      await db.execute(stmt + ";");
+    } catch (e: any) {
+      console.error(`Failed to execute statement: ${stmt}`);
+      console.error(e);
+      process.exit(1);
+    }
+  }
 
   console.log("Reading seeds...");
   const characterSets = readNdJson<{ id: string }>(`${seedDir}/character_sets.json`);
@@ -66,7 +113,7 @@ async function main() {
     console.log("Inserting character_sets...");
     if (characterSets.length > 0) {
       const rows = characterSets.map((cs) => [cs.id]);
-      await chunkInsert("character_sets", ["id"], rows, 100);
+      await chunkInsert("character_sets", ["id"], rows, 1000, 5);
     }
 
     console.log("Inserting villages...");
@@ -83,14 +130,15 @@ async function main() {
         "villages",
         ["id", "village_number", "name", "characters", "character_set_id", "created_at"],
         rows,
-        50
+        1000,
+        5
       );
     }
 
     console.log("Inserting avatars...");
     if (avatars.length > 0) {
       const rows = avatars.map((a) => [a.name, a.avatar_url, a.set_id]);
-      await chunkInsert("avatars", ["name", "avatar_url", "set_id"], rows, 100);
+      await chunkInsert("avatars", ["name", "avatar_url", "set_id"], rows, 1000, 5);
     }
 
     console.log("Inserting posts (this may take a while)...");
@@ -110,7 +158,8 @@ async function main() {
         "posts",
         ["village_id", "character", "day", "sequence", "body", "timestamp", "post_type", "source", "created_at"],
         rows,
-        100
+        1000,
+        15
       );
     }
 
