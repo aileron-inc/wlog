@@ -46,18 +46,14 @@ description = "人狼審問ログをスクレイピング"
 run = "bun run sling/scrape.ts"
 
 [tasks."scrape:seed"]
-run = ["mise run scrape", "mise run sling:seed", "mise run turso:seed", "mise run gen:characters"]
+run = ["mise run scrape", "mise run turso:seed", "mise run gen:characters"]
 description = "スクレイピング + Turso投入 + キャラ表生成"
 
 # --- Data Loading ---
 
-[tasks."sling:seed"]
-run = "sling run -r sling/wlog.yaml"
-description = "JSON → ローカルSQLite にデータ投入（staging）"
-
 [tasks."turso:seed"]
-run = "sqlite3 storage/seed.sqlite3 .dump | turso db shell wlog-aileron"
-description = "ローカルSQLite → Turso に dump import"
+run = "bun run sling/import-seeds.ts"
+description = "ローカルNDJSON → Turso にアップロード"
 
 # --- Generate ---
 

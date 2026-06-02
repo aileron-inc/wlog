@@ -1,10 +1,9 @@
-import { Database } from "bun:sqlite";
+import { db } from "./lib/db";
 import { MODEL } from "./lib/llm";
 import { processGenerateVillage } from "./jobs/generate-village";
 import { log } from "./lib/logger";
 
 const POLL_INTERVAL = parseInt(process.env.WORKER_POLL_INTERVAL || "3000", 10);
-const DB_PATH = "storage/development.sqlite3";
 
 const handlers: Record<string, (jobId: string, payload: any) => Promise<void>> = {
   generate_village: processGenerateVillage,
@@ -13,17 +12,19 @@ const handlers: Record<string, (jobId: string, payload: any) => Promise<void>> =
 async function main() {
   log("info", `Worker started (model: ${MODEL}, poll: ${POLL_INTERVAL}ms)`);
 
-  const db = new Database(DB_PATH);
-
   while (true) {
-    const job = db.prepare(`
+    const jobResult = await db.execute(`
       SELECT * FROM jobs WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1
-    `).get() as { id: string; type: string; payload: string } | undefined;
+    `);
+    const job = jobResult.rows[0] as unknown as { id: string; type: string; payload: string } | undefined;
 
     if (job) {
       log("info", `--- Job: ${job.id} (type: ${job.type}) ---`);
       const updatedAt = new Date().toISOString();
-      db.prepare(`UPDATE jobs SET status = 'running', updated_at = ? WHERE id = ?`).run(updatedAt, job.id);
+      await db.execute({
+        sql: `UPDATE jobs SET status = 'running', updated_at = ? WHERE id = ?`,
+        args: [updatedAt, job.id],
+      });
 
       try {
         const payload = JSON.parse(job.payload);
@@ -35,7 +36,10 @@ async function main() {
         log("error", `[${job.id}] ${errMsg}`);
         if (e instanceof Error && e.stack) console.error(e.stack);
         const errUpdatedAt = new Date().toISOString();
-        db.prepare(`UPDATE jobs SET status = 'failed', error = ?, updated_at = ? WHERE id = ?`).run(errMsg, errUpdatedAt, job.id);
+        await db.execute({
+          sql: `UPDATE jobs SET status = 'failed', error = ?, updated_at = ? WHERE id = ?`,
+          args: [errMsg, errUpdatedAt, job.id],
+        });
       }
     }
 

@@ -12,6 +12,7 @@ module Wlog
     config.time_zone = "Asia/Tokyo"
 
     config.api_only = true
+    config.middleware.delete ActiveRecord::Migration::CheckPending
 
     config.session_store :cookie_store, key: "_wlog_session"
     config.middleware.use ActionDispatch::Flash
