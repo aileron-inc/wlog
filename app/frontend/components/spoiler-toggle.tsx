@@ -1,5 +1,6 @@
 import { useSpoiler } from "@/lib/use-spoiler";
 import { qs } from "@/lib/links";
+import { router } from "@inertiajs/react";
 
 export function SpoilerToggle() {
   const { spoiler, setSpoiler } = useSpoiler();
@@ -19,7 +20,8 @@ export function SpoilerToggle() {
           } else {
             params.delete("spoiler");
           }
-          window.location.search = params.toString() ? `?${params.toString()}` : "";
+          const url = window.location.pathname + (params.toString() ? `?${params.toString()}` : "");
+          router.visit(url, { preserveState: true, preserveScroll: true });
         }}
         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ${
           spoiler ? "bg-amber-500" : "bg-stone-300"

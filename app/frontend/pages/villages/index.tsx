@@ -1,5 +1,6 @@
 import { WlogHeader } from "@/components/wlog-header";
 import { qs } from "@/lib/links";
+import { Link } from "@inertiajs/react";
 import type { VillageIndexProps } from "./_props";
 
 export default function Page({
@@ -62,7 +63,7 @@ export default function Page({
 
         <div className="mt-8">
           <div className="flex flex-wrap gap-2">
-            <a
+            <Link
               href="/villages"
               className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                 currentTag === ""
@@ -71,9 +72,9 @@ export default function Page({
               }`}
             >
               すべて
-            </a>
+            </Link>
             {tags.map((tag) => (
-              <a
+              <Link
                 key={tag.id}
                 href={`/villages${qs({ tag: tag.id })}`}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
@@ -83,7 +84,7 @@ export default function Page({
                 }`}
               >
                 #{tag.name}
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -98,7 +99,7 @@ export default function Page({
         <ul className="mt-3 divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white">
           {villages.map((v) => (
             <li key={v.id}>
-              <a
+              <Link
                 href={`/villages/about?village_id=${v.id}`}
                 className="flex items-center justify-between gap-3 px-4 py-4 hover:bg-stone-50 transition-colors"
               >
@@ -121,7 +122,7 @@ export default function Page({
                   </span>
                 </span>
                 <span className="shrink-0 text-sm text-stone-400">&rarr;</span>
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -129,12 +130,12 @@ export default function Page({
         {total_pages > 1 && (
           <nav className="mt-8 flex items-center justify-between">
             {page > 1 ? (
-              <a
+              <Link
                 href={`/villages${qs({ ...base, page: String(page - 1) })}`}
                 className="rounded-md border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors"
               >
                 前のページ
-              </a>
+              </Link>
             ) : (
               <span />
             )}
@@ -142,7 +143,7 @@ export default function Page({
             <div className="flex gap-1">
               {pages.map((p, i) =>
                 typeof p === "number" ? (
-                  <a
+                  <Link
                     key={i}
                     href={`/villages${qs({ ...base, page: String(p) })}`}
                     className={`min-w-[28px] rounded-md px-2 py-1 text-xs text-center transition-colors ${
@@ -152,7 +153,7 @@ export default function Page({
                     }`}
                   >
                     {p}
-                  </a>
+                  </Link>
                 ) : (
                   <span
                     key={i}
@@ -165,12 +166,12 @@ export default function Page({
             </div>
 
             {page < total_pages ? (
-              <a
+              <Link
                 href={`/villages${qs({ ...base, page: String(page + 1) })}`}
                 className="rounded-md border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors"
               >
                 次のページ
-              </a>
+              </Link>
             ) : (
               <span />
             )}

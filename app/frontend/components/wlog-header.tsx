@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "@inertiajs/react";
 
 type WlogHeaderProps = {
   action?: ReactNode;
@@ -21,7 +22,7 @@ export function WlogHeader({ action }: WlogHeaderProps) {
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
-          <a href="/" className="block min-w-0">
+          <Link href="/" className="block min-w-0">
             <span className="min-w-0">
               <span className="block text-3xl font-bold leading-none tracking-normal">
                 Wlog
@@ -30,7 +31,7 @@ export function WlogHeader({ action }: WlogHeaderProps) {
                 村の記録をひらく場所
               </span>
             </span>
-          </a>
+          </Link>
         </div>
       </div>
     </header>

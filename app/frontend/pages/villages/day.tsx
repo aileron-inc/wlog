@@ -2,6 +2,7 @@ import { WlogHeader } from "@/components/wlog-header";
 import { dayLabel, dayUrl, aboutUrl } from "@/lib/links";
 import { SpoilerToggle } from "@/components/spoiler-toggle";
 import { useSpoiler } from "@/lib/use-spoiler";
+import { Link } from "@inertiajs/react";
 import { PostCard, Avatar } from "./_post";
 import type { PostData } from "./_post";
 import { Pagination } from "./_pagination";
@@ -71,7 +72,7 @@ export default function Page({
       <div className="village-phone-shell px-4 pb-8">
         <WlogHeader action={<SpoilerToggle />} />
 
-        <a
+        <Link
           href={aboutUrl({
             village_id,
             ...(spoiler ? { spoiler: "true" } : {}),
@@ -79,7 +80,7 @@ export default function Page({
           className="mt-5 inline-block text-sm text-stone-500 hover:underline"
         >
           &larr; 村情報
-        </a>
+        </Link>
 
         <div className="mt-2 flex items-start justify-between gap-3">
           <h1 className="text-xl font-bold text-stone-800">{dayLabel(day)}</h1>
