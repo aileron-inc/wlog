@@ -1,4 +1,5 @@
 import { dayUrl } from "@/lib/links";
+import { Link } from "@inertiajs/react";
 
 type PaginationProps = {
   base: Record<string, string>;
@@ -41,12 +42,12 @@ export function Pagination({ base, page, total_pages }: PaginationProps) {
   return (
     <nav className="mt-8 flex items-center justify-between">
       {page > 1 ? (
-        <a
+        <Link
           href={dayUrl({ ...base, page: String(page - 1) })}
           className="rounded-md border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors"
         >
           前のページ
-        </a>
+        </Link>
       ) : (
         <span />
       )}
@@ -54,7 +55,7 @@ export function Pagination({ base, page, total_pages }: PaginationProps) {
       <div className="flex gap-1">
         {pages.map((p, i) =>
           typeof p === "number" ? (
-            <a
+            <Link
               key={i}
               href={dayUrl({ ...base, page: String(p) })}
               className={`min-w-[28px] rounded-md px-2 py-1 text-xs text-center transition-colors ${
@@ -64,7 +65,7 @@ export function Pagination({ base, page, total_pages }: PaginationProps) {
               }`}
             >
               {p}
-            </a>
+            </Link>
           ) : (
             <span
               key={i}
@@ -77,12 +78,12 @@ export function Pagination({ base, page, total_pages }: PaginationProps) {
       </div>
 
       {page < total_pages ? (
-        <a
+        <Link
           href={dayUrl({ ...base, page: String(page + 1) })}
           className="rounded-md border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors"
         >
           次のページ
-        </a>
+        </Link>
       ) : (
         <span />
       )}

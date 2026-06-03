@@ -2,6 +2,7 @@ import { WlogHeader } from "@/components/wlog-header";
 import { dayLabel, dayUrl } from "@/lib/links";
 import { SpoilerToggle } from "@/components/spoiler-toggle";
 import { useSpoiler } from "@/lib/use-spoiler";
+import { Link } from "@inertiajs/react";
 import { useState } from "react";
 import type { VillageAboutProps } from "./_props";
 
@@ -44,12 +45,12 @@ export default function Page({
       <div className="village-phone-shell px-4 pb-8">
         <WlogHeader action={<SpoilerToggle />} />
 
-        <a
+        <Link
           href="/"
           className="mt-5 inline-block text-sm text-stone-500 hover:underline"
         >
           &larr; 村一覧
-        </a>
+        </Link>
 
         <h1 className="mt-2 text-2xl font-bold leading-tight text-stone-800">
           ({village.village_number}) {village.name}
@@ -139,7 +140,7 @@ export default function Page({
           <ul className="mt-6 divide-y divide-stone-100 rounded-lg border border-stone-200 bg-white">
             {available_days.map((day, i) => (
               <li key={day}>
-                <a
+                <Link
                   href={dayUrl({
                     ...base,
                     day,
@@ -154,7 +155,7 @@ export default function Page({
                     {dayLabel(day)}
                   </span>
                   <span className="ml-auto shrink-0 text-sm text-stone-400">&rarr;</span>
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

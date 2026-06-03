@@ -1,4 +1,5 @@
 import { dayLabel, dayUrl } from "@/lib/links";
+import { Link } from "@inertiajs/react";
 
 type DayNavProps = {
   base: Record<string, string>;
@@ -18,7 +19,7 @@ export function DayNav({ base, day, available_days }: DayNavProps) {
     <>
       <div className="mt-4 flex items-center gap-1 overflow-x-auto">
         {available_days.map((d) => (
-          <a
+          <Link
             key={d}
             href={dayUrl({ ...base, day: d })}
             className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -28,28 +29,28 @@ export function DayNav({ base, day, available_days }: DayNavProps) {
             }`}
           >
             {dayLabel(d)}
-          </a>
+          </Link>
         ))}
       </div>
 
       <div className="mt-4 flex justify-between">
         {prevDay ? (
-          <a
+          <Link
             href={dayUrl({ ...base, day: prevDay })}
             className="text-xs font-medium text-stone-500 hover:text-stone-700"
           >
             &larr; {dayLabel(prevDay)}
-          </a>
+          </Link>
         ) : (
           <span />
         )}
         {nextDay ? (
-          <a
+          <Link
             href={dayUrl({ ...base, day: nextDay })}
             className="text-xs font-medium text-stone-500 hover:text-stone-700"
           >
             {dayLabel(nextDay)} &rarr;
-          </a>
+          </Link>
         ) : (
           <span />
         )}
