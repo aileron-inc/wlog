@@ -5,7 +5,7 @@ experimental = true
 _.source = "bin/load_env"
 
 [tools]
-ruby = "4.0.4"
+ruby = "4.0.10"
 bun = "latest"
 
 # --- Setup ---
