@@ -68,7 +68,7 @@ COPY --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --from=build /root/.local/share/mise/installs/ruby /root/.local/share/mise/installs/ruby
 COPY --from=build /rails /rails
 
-ENV PATH="/root/.local/share/mise/installs/ruby/4.0.4/bin:${PATH}"
+ENV PATH="/root/.local/share/mise/installs/ruby/4.0.10/bin:${PATH}"
 
 RUN ruby --version && \
     bundle --version
